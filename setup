@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#	SmartMeter to DBus
+#	setup script (install/uninstall)
+#
+# this script will accept the following commands on the command line:
+#	setup install
+#	setup uninstall
+#	setup reinstall (used to reinstall after Venus OS update)
+
+#### following line incorporates SetupHelper utilities into this script
+# Refer to the SetupHelper ReadMe file for details.
+
+source "/data/SetupHelper/CommonResources"
+
+#### end of lines to include SetupHelper
+
+if [ $scriptAction == 'INSTALL' ] ; then
+	# Install service
+	installService $packageName
+fi
+
+if [ $scriptAction == 'UNINSTALL' ] ; then
+	# Remove service
+	removeService $packageName
+fi
+endScript

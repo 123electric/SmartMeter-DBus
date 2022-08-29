@@ -1,0 +1,2 @@
+v1.0 - 17-8-2022
+-First stable version
