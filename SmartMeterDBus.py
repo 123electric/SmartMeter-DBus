@@ -87,7 +87,7 @@ class SmartMeterDBus():
         voltage_l3 = self._meter_data['voltage_l3']
         current_l1 = round(power_l1/voltage_l1, 2)
         current_l2 = round(power_l2/voltage_l2, 2)
-        current_l3 = round(power_l2/voltage_l3, 2)
+        current_l3 = round(power_l3/voltage_l3, 2)
         self._dbusservice['/Ac/Power'] = power_l1+power_l2+power_l3
         self._dbusservice['/Ac/Current'] = current_l1+current_l2+current_l3
         self._dbusservice['/Ac/Energy/Forward'] = round(self._meter_data['energy_delivered_tariff1']+self._meter_data['energy_delivered_tariff2'], 2)
