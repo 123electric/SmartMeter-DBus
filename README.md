@@ -1,5 +1,6 @@
 # Dutch SmartMeter MQTT to DBus
 **This project currently only works for Dutch smart meters**
+
 This software takes the Dutch smart meter values on the VenusOS MQTT and translates it to the correct D-Bus values.
 It involves the Smartstuff P1 Pro Dongle, which sends the Dutch smart meter values from the P1 port to the VenusOS local MQTT broker.
 
