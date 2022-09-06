@@ -1,2 +1,5 @@
+v1.1 - 5-9-2022
+-Added timeout for when not receiving data and increased polling frequency for faster transmission to dbus.
+
 v1.0 - 17-8-2022
 -First stable version

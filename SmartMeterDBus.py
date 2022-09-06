@@ -18,16 +18,17 @@ import ve_utils
 from vedbus import VeDbusService
 
 class SmartMeterDBus():
+    LAST_RECEIVED_TIMEOUT = 30
+
     def __init__(self, mqtt_broker, mqtt_username, mqtt_password, mqtt_topic):
         self._info = {
             'name'      : "SmartMeter",
             'servicename' : "smartmeter",
             'id'          : 0,
-            'version'    : 1.0
+            'version'    : 1.01
         }
         self._device_instance = 30
 
-        self.last_updated = None
         self._mqtt_topic = mqtt_topic
         self._mqtt_client = Client('SmartMeterDBus')
         self._mqtt_client.tls_set(cert_reqs=ssl.CERT_NONE)
@@ -38,6 +39,8 @@ class SmartMeterDBus():
         self._mqtt_client.on_message = self._mqtt_on_message
         self._mqtt_client.loop_start()
         self._meter_data = {}
+        self._new_data_received = False
+        self._last_received = None
 
         self._dbusservice = VeDbusService("com.victronenergy.grid.smartmeter")
         
@@ -78,34 +81,51 @@ class SmartMeterDBus():
         self._dbusservice.add_path('/Ac/L3/Current', None, gettextcallback=lambda p, v: "{:.2f}A".format(v))
 
     def update(self):
-        #if topic == 'power_delivered_l1' and round(float(value)*1000, 3) > 0: self._dbusservice["/Ac/L1/Power"] = float(message.payload)*1000
-        power_l1 = int(self._meter_data['power_returned_l1']*-1000) if round(self._meter_data['power_returned_l1'], 3) > 0.000 else int(self._meter_data['power_delivered_l1']*1000)
-        power_l2 = int(self._meter_data['power_returned_l2']*-1000) if round(self._meter_data['power_returned_l2'], 3) > 0.000 else int(self._meter_data['power_delivered_l2']*1000)
-        power_l3 = int(self._meter_data['power_returned_l3']*-1000) if round(self._meter_data['power_returned_l3'], 3) > 0.000 else int(self._meter_data['power_delivered_l3']*1000)
-        voltage_l1 = self._meter_data['voltage_l1']
-        voltage_l2 = self._meter_data['voltage_l2']
-        voltage_l3 = self._meter_data['voltage_l3']
-        current_l1 = round(power_l1/voltage_l1, 2)
-        current_l2 = round(power_l2/voltage_l2, 2)
-        current_l3 = round(power_l3/voltage_l3, 2)
-        self._dbusservice['/Ac/Power'] = power_l1+power_l2+power_l3
-        self._dbusservice['/Ac/Current'] = current_l1+current_l2+current_l3
-        self._dbusservice['/Ac/Energy/Forward'] = round(self._meter_data['energy_delivered_tariff1']+self._meter_data['energy_delivered_tariff2'], 2)
-        self._dbusservice['/Ac/L1/Power'] = power_l1
-        self._dbusservice['/Ac/L2/Power'] = power_l2
-        self._dbusservice['/Ac/L3/Power'] = power_l3
-        self._dbusservice['/Ac/L1/Voltage'] = self._meter_data['voltage_l1']
-        self._dbusservice['/Ac/L2/Voltage'] = self._meter_data['voltage_l2']
-        self._dbusservice['/Ac/L3/Voltage'] = self._meter_data['voltage_l3']
-        self._dbusservice['/Ac/L1/Current'] = current_l1
-        self._dbusservice['/Ac/L2/Current'] = current_l2
-        self._dbusservice['/Ac/L3/Current'] = current_l3
+        if self._new_data_received and time.time() > self._last_received + 0.01: # After 10ms of no incoming data, process data
+            power_l1 = int(self._meter_data['power_returned_l1']*-1000) if round(self._meter_data['power_returned_l1'], 3) > 0.000 else int(self._meter_data['power_delivered_l1']*1000)
+            power_l2 = int(self._meter_data['power_returned_l2']*-1000) if round(self._meter_data['power_returned_l2'], 3) > 0.000 else int(self._meter_data['power_delivered_l2']*1000)
+            power_l3 = int(self._meter_data['power_returned_l3']*-1000) if round(self._meter_data['power_returned_l3'], 3) > 0.000 else int(self._meter_data['power_delivered_l3']*1000)
+            voltage_l1 = self._meter_data['voltage_l1']
+            voltage_l2 = self._meter_data['voltage_l2']
+            voltage_l3 = self._meter_data['voltage_l3']
+            current_l1 = round(power_l1/voltage_l1, 2)
+            current_l2 = round(power_l2/voltage_l2, 2)
+            current_l3 = round(power_l3/voltage_l3, 2)
+            self._dbusservice['/Ac/Power'] = power_l1+power_l2+power_l3
+            self._dbusservice['/Ac/Current'] = current_l1+current_l2+current_l3
+            self._dbusservice['/Ac/Energy/Forward'] = round(self._meter_data['energy_delivered_tariff1']+self._meter_data['energy_delivered_tariff2'], 2)
+            self._dbusservice['/Ac/L1/Power'] = power_l1
+            self._dbusservice['/Ac/L2/Power'] = power_l2
+            self._dbusservice['/Ac/L3/Power'] = power_l3
+            self._dbusservice['/Ac/L1/Voltage'] = self._meter_data['voltage_l1']
+            self._dbusservice['/Ac/L2/Voltage'] = self._meter_data['voltage_l2']
+            self._dbusservice['/Ac/L3/Voltage'] = self._meter_data['voltage_l3']
+            self._dbusservice['/Ac/L1/Current'] = current_l1
+            self._dbusservice['/Ac/L2/Current'] = current_l2
+            self._dbusservice['/Ac/L3/Current'] = current_l3
+
+            self._new_data_received = False
+        elif time.time() > self._last_received + self.LAST_RECEIVED_TIMEOUT:
+            self._dbusservice['/Ac/Power'] = None
+            self._dbusservice['/Ac/Current'] = None
+            self._dbusservice['/Ac/Energy/Forward'] = None
+            self._dbusservice['/Ac/L1/Power'] = None
+            self._dbusservice['/Ac/L2/Power'] = None
+            self._dbusservice['/Ac/L3/Power'] = None
+            self._dbusservice['/Ac/L1/Voltage'] = None
+            self._dbusservice['/Ac/L2/Voltage'] = None
+            self._dbusservice['/Ac/L3/Voltage'] = None
+            self._dbusservice['/Ac/L1/Current'] = None
+            self._dbusservice['/Ac/L2/Current'] = None
+            self._dbusservice['/Ac/L3/Current'] = None
+
 
     def close(self):
         self._mqtt_client.loop_stop()
 
     def _mqtt_on_message(self, client, userdata, message):
-        self.last_updated = time.time()
+        self._last_received = time.time()
+        self._new_data_received = True
         # Get sub topic from whole topic path
         topic = message.topic[len(self._mqtt_topic)+1:]
         try:
@@ -146,7 +166,7 @@ if __name__ == "__main__":
     print('SmartMeter to DBus started')
     DBusGMainLoop(set_as_default=True)
     mainloop = GLib.MainLoop()
-    GLib.timeout_add(500, lambda: exit_on_error(handle_timer_tick))
+    GLib.timeout_add(10, lambda: exit_on_error(handle_timer_tick))
     smartmeter_dbus = SmartMeterDBus('127.0.0.1', '', '', 'SmartMeter')
     # Give some time to receive MQTT data
     time.sleep(3)
