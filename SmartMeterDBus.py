@@ -25,7 +25,7 @@ class SmartMeterDBus():
             'name'      : "SmartMeter",
             'servicename' : "smartmeter",
             'id'          : 0,
-            'version'    : 1.01
+            'version'    : "1.02"
         }
         self._device_instance = 30
 
@@ -53,7 +53,7 @@ class SmartMeterDBus():
         self._dbusservice.add_path('/DeviceInstance', self._device_instance)
         self._dbusservice.add_path('/ProductId',     self._info['id'])
         self._dbusservice.add_path('/ProductName',     self._info['name'])
-        self._dbusservice.add_path('/FirmwareVersion', self._info['version'], gettextcallback=lambda p, v: "v{:.2f}".format(v))
+        self._dbusservice.add_path('/FirmwareVersion', self._info['version'], self._info['version'], gettextcallback=lambda p, v: "v"+v)
         self._dbusservice.add_path('/HardwareVersion', None)
         self._dbusservice.add_path('/Serial', None)
         self._dbusservice.add_path('/Connected', 1)
