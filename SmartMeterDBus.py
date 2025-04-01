@@ -25,7 +25,7 @@ class SmartMeterDBus():
             'name'      : "SmartMeter",
             'servicename' : "smartmeter",
             'id'          : 0,
-            'version'    : "1.02"
+            'version'    : "1.03"
         }
         self._device_instance = 30
 

@@ -1,3 +1,6 @@
+v1.3 - 1-4-2025
+-Make software compatible with new Paho MQTT library
+
 v1.1 - 5-9-2022
 -Added timeout for when not receiving data and increased polling frequency for faster transmission to dbus.
 
