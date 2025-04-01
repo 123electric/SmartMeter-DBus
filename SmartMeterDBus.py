@@ -4,7 +4,7 @@ from os import _exit as os_exit
 import sys
 import time
 import ssl
-from paho.mqtt.client import Client
+import paho.mqtt.client as mqtt
 from collections import deque
 from datetime import datetime
 from traceback import print_exc
@@ -30,7 +30,7 @@ class SmartMeterDBus():
         self._device_instance = 30
 
         self._mqtt_topic = mqtt_topic
-        self._mqtt_client = Client('SmartMeterDBus')
+        self._mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, client_id='SmartMeterDBus')
         self._mqtt_client.tls_set(cert_reqs=ssl.CERT_NONE)
         self._mqtt_client.tls_insecure_set(True)
         self._mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
